@@ -20,7 +20,7 @@
        dossier (probablement le même GitHub Pages que ta plateforme principale,
        dans un sous-dossier dédié). Toutes les URL ci-dessous en dépendent. -->
   <IconUrl DefaultValue="https://louiselefichous.github.io/outlook-addin/outlook-addin/icons/icon-32.png"/>
-  <HighResIconUrl DefaultValue="https://louiselefichous.github.io/outlook-addin/outlook-addin/icons/icon-128.png"/>
+  <HighResolutionIconUrl DefaultValue="https://louiselefichous.github.io/outlook-addin/outlook-addin/icons/icon-128.png"/>
   <SupportUrl DefaultValue="https://louiselefichous.github.io/"/>
 
   <AppDomains>
