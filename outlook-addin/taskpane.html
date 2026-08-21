@@ -221,10 +221,20 @@ function showStatus(msg, ok){
   el.textContent = msg; el.className = 'status-msg show '+(ok?'ok':'err');
 }
 
+function emailDocId(currentEmail, clientKey){
+  // itemId est la vraie source de vérité (unique par email Outlook). S'il manque
+  // pour une raison quelconque, on retombe sur une combinaison sujet+expéditeur+date
+  // pour rester déterministe plutôt que de risquer un doublon.
+  const base = currentEmail.itemId
+    ? currentEmail.itemId
+    : (currentEmail.subject||'')+'_'+(currentEmail.fromEmail||'')+'_'+(currentEmail.dateISO||'');
+  return 'cem_'+base.replace(/[^a-zA-Z0-9]/g,'_').slice(0,180);
+}
+
 document.getElementById('saveEmailBtn').addEventListener('click', function(){
   if(!selectedClientKey || !currentEmail) return;
   const entry = {
-    id: uid('cem'),
+    id: emailDocId(currentEmail, selectedClientKey),
     clientKey: selectedClientKey,
     clientName: selectedClientName,
     subject: currentEmail.subject || '(sans objet)',
@@ -237,6 +247,7 @@ document.getElementById('saveEmailBtn').addEventListener('click', function(){
   };
   db.collection('clientEmails').doc(entry.id).set(entry).then(function(){
     showStatus('Enregistré sur la fiche de '+selectedClientName+' !', true);
+    document.getElementById('saveEmailBtn').textContent = 'Mettre à jour (déjà enregistré)';
   }).catch(function(err){ showStatus("Erreur d'enregistrement : "+err.message, false); });
 });
 
@@ -245,6 +256,10 @@ Office.onReady(function(){
   const item = Office.context.mailbox.item;
   const from = item.from || (item.sender || {});
   currentEmail = {
+    // itemId est fourni par Outlook et identifie cet email de façon unique et stable —
+    // s'en servir comme identifiant évite de créer un doublon si on clique "Enregistrer"
+    // plusieurs fois sur le même email.
+    itemId: item.itemId || '',
     subject: item.subject || '',
     fromName: from.displayName || '',
     fromEmail: from.emailAddress || '',
