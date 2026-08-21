@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marine Composite — Enregistrer l'email</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Office.js : donne accès à l'email actuellement ouvert dans Outlook -->
+<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+
+<!-- Même projet Firebase que la plateforme de suivi -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<style>
+  :root{
+    --navy:#0B1526; --accent:#2E6F69; --bg:#F5F6F8; --card:#FFFFFF;
+    --line:#D7D9DE; --text:#14161A; --muted:#52565E; --ok:#2E7D5C; --warn:#AE3B2E;
+    --radius-sm:6px; --radius-md:10px;
+    --ease:cubic-bezier(.4,0,.2,1);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:"Inter",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;padding:16px;}
+  h2{font-size:14px;font-weight:800;margin:0 0 4px;color:var(--navy);}
+  p.lead{font-size:12px;color:var(--muted);margin:0 0 16px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-md);padding:16px;margin-bottom:14px;}
+  .card h3{margin:0 0 10px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--text);padding:0 0 8px;border-bottom:1px solid var(--line);}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px;}
+  .field input,.field select,.field textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:#fff;}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px rgba(46,111,105,.14);}
+  .field textarea{resize:vertical;min-height:70px;}
+  .email-preview{font-size:12px;color:var(--muted);background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px;}
+  .email-preview b{color:var(--text);}
+  .btn{width:100%;border:none;border-radius:var(--radius-sm);padding:11px;font-size:13.5px;font-weight:700;font-family:inherit;color:#fff;background:var(--accent);cursor:pointer;transition:filter .2s var(--ease);}
+  .btn:hover{filter:brightness(1.08);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-outline{background:#fff;color:var(--navy);border:1px solid var(--line);}
+  .status-msg{border-radius:var(--radius-sm);padding:9px 12px;font-size:12.5px;margin-bottom:12px;display:none;}
+  .status-msg.show{display:block;}
+  .status-msg.ok{background:#E3F1EA;color:var(--ok);}
+  .status-msg.err{background:#FBEAE8;color:var(--warn);}
+  .suggestion{padding:8px 10px;font-size:12.5px;border:1px solid var(--line);border-radius:var(--radius-sm);cursor:pointer;margin-bottom:6px;background:#fff;}
+  .suggestion:hover{border-color:var(--accent);}
+  .suggestion b{color:var(--navy);}
+  .placeholder-italic{color:var(--muted);font-style:italic;font-size:12px;}
+
+  #authGate{padding:8px 0;}
+  .auth-error{background:#FBEAE8;color:var(--warn);border-radius:8px;padding:9px 11px;font-size:12px;margin-bottom:12px;display:none;}
+  .auth-error.show{display:block;}
+</style>
+</head>
+<body>
+
+<h2>Marine Composite</h2>
+<p class="lead">Enregistrer cet email sur une fiche client</p>
+
+<!-- ===== Connexion (réservé à l'équipe admin, même liste que la plateforme de suivi) ===== -->
+<div id="authGate">
+  <div class="card">
+    <div id="authError" class="auth-error"></div>
+    <div class="field"><label>Adresse email</label><input type="email" id="loginEmail" autocomplete="username"></div>
+    <div class="field"><label>Mot de passe</label><input type="password" id="loginPassword" autocomplete="current-password"></div>
+    <button class="btn" id="loginSubmit">Se connecter</button>
+  </div>
+</div>
+
+<!-- ===== Contenu principal (une fois connecté) ===== -->
+<div id="appRoot" style="display:none;">
+  <div class="card">
+    <h3>Email ouvert</h3>
+    <div id="emailPreview" class="email-preview">Chargement…</div>
+  </div>
+
+  <div class="card">
+    <h3>Client concerné</h3>
+    <div id="statusMsg" class="status-msg"></div>
+    <div class="field">
+      <label>Rechercher un client</label>
+      <input type="text" id="clientSearch" placeholder="Nom du client...">
+    </div>
+    <div id="clientSuggestions"></div>
+    <div id="selectedClient" style="display:none;margin-top:8px;padding:10px 12px;background:#EAF2F1;border-radius:6px;font-size:13px;">
+      Client sélectionné : <b id="selectedClientName"></b>
+      <a href="#" id="clearSelectedClient" style="float:right;color:var(--accent);text-decoration:none;font-size:12px;">changer</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Aperçu à enregistrer</h3>
+    <div class="field"><label>Résumé (modifiable)</label><textarea id="bodyPreview"></textarea></div>
+    <button class="btn" id="saveEmailBtn" disabled>Enregistrer sur la fiche client</button>
+  </div>
+
+  <button class="btn btn-outline" id="logoutBtn" style="margin-top:4px;">Se déconnecter</button>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC5OVJwfcW8e7cyNdT2m084GLD_oCxzK5Q",
+  authDomain: "vrai-marine-composite.firebaseapp.com",
+  projectId: "vrai-marine-composite",
+  storageBucket: "vrai-marine-composite.firebasestorage.app",
+  messagingSenderId: "1014319573274",
+  appId: "1:1014319573274:web:12816e650584a757ce64a3"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+db.settings({ experimentalForceLongPolling: true });
+
+// Même liste que la plateforme de suivi : réservé à l'équipe admin (pas aux employés).
+const ALLOWED_EMAILS = ['bzh7126@gmail.com', 'louise.lefichous@gmail.com'];
+function isEmailAllowed(email){ return ALLOWED_EMAILS.indexOf((email||'').trim().toLowerCase()) !== -1; }
+
+function esc(s){ return (s||'').toString().replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; }); }
+function uid(p){ return p+'_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
+function normalizeClientKey(name){ return (name||'').trim().toLowerCase(); }
+
+let currentEmail = null; // {subject, fromName, fromEmail, dateISO, bodyText}
+let allClients = [];     // construit à partir des bateaux + dossiers prod existants
+let selectedClientKey = null, selectedClientName = null;
+
+function showAuthError(msg){ const el=document.getElementById('authError'); el.textContent=msg; el.classList.add('show'); }
+function friendlyAuthError(err){
+  const map = {
+    'auth/invalid-email': "Adresse email invalide.",
+    'auth/user-not-found': "Aucun compte avec cet email.",
+    'auth/wrong-password': "Mot de passe incorrect.",
+    'auth/invalid-credential': "Email ou mot de passe incorrect."
+  };
+  return map[err.code] || err.message;
+}
+document.getElementById('loginSubmit').addEventListener('click', function(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if(!isEmailAllowed(email)){ showAuthError("Cette adresse n'est pas autorisée."); return; }
+  auth.signInWithEmailAndPassword(email, password).catch(function(err){ showAuthError(friendlyAuthError(err)); });
+});
+document.getElementById('logoutBtn').addEventListener('click', function(){ auth.signOut(); });
+
+auth.onAuthStateChanged(function(user){
+  const gate = document.getElementById('authGate');
+  const root = document.getElementById('appRoot');
+  if(user && isEmailAllowed(user.email)){
+    gate.style.display = 'none';
+    root.style.display = 'block';
+    loadClients();
+  } else {
+    if(user && !isEmailAllowed(user.email)){ showAuthError("Cette adresse n'est pas autorisée."); auth.signOut(); }
+    gate.style.display = 'block';
+    root.style.display = 'none';
+  }
+});
+
+// ----- Construit la liste des clients à partir des bateaux + dossiers Prod existants -----
+function loadClients(){
+  Promise.all([db.collection('boats').get(), db.collection('prodJobs').get()]).then(function(results){
+    const map = {};
+    results[0].docs.forEach(function(d){
+      const b = d.data();
+      const key = normalizeClientKey(b.clientName);
+      if(!key) return;
+      if(!map[key]) map[key] = { key:key, name:(b.clientName||'').trim(), email:'' };
+      if(!map[key].email && b.clientEmail) map[key].email = b.clientEmail;
+    });
+    results[1].docs.forEach(function(d){
+      const p = d.data();
+      const key = normalizeClientKey(p.client);
+      if(!key) return;
+      if(!map[key]) map[key] = { key:key, name:(p.client||'').trim(), email:'' };
+      if(!map[key].email && p.clientEmail) map[key].email = p.clientEmail;
+    });
+    allClients = Object.keys(map).map(function(k){ return map[k]; }).sort(function(a,c){ return a.name.localeCompare(c.name); });
+    // Si l'expéditeur de l'email correspond à un email client connu, on présélectionne.
+    if(currentEmail && currentEmail.fromEmail){
+      const match = allClients.find(function(c){ return c.email && c.email.toLowerCase()===currentEmail.fromEmail.toLowerCase(); });
+      if(match) selectClient(match.key, match.name);
+    }
+    renderClientSuggestions('');
+  }).catch(function(err){ console.error(err); showStatus("Erreur de chargement des clients : "+err.message, false); });
+}
+
+document.getElementById('clientSearch').addEventListener('input', function(e){ renderClientSuggestions(e.target.value); });
+function renderClientSuggestions(query){
+  const box = document.getElementById('clientSuggestions');
+  const q = query.trim().toLowerCase();
+  if(!q){ box.innerHTML=''; return; }
+  const matches = allClients.filter(function(c){ return c.name.toLowerCase().indexOf(q)>-1; }).slice(0,6);
+  if(!matches.length){
+    box.innerHTML = '<div class="placeholder-italic">Aucun client existant trouvé — '+
+      '<a href="#" id="useTypedName" style="color:var(--accent);">utiliser "'+esc(query)+'" tel quel</a></div>';
+    document.getElementById('useTypedName').addEventListener('click', function(e){ e.preventDefault(); selectClient(normalizeClientKey(query), query.trim()); });
+    return;
+  }
+  box.innerHTML = matches.map(function(c){ return '<div class="suggestion" data-key="'+esc(c.key)+'" data-name="'+esc(c.name)+'"><b>'+esc(c.name)+'</b></div>'; }).join('');
+  box.querySelectorAll('.suggestion').forEach(function(el){ el.addEventListener('click', function(){ selectClient(el.dataset.key, el.dataset.name); }); });
+}
+function selectClient(key, name){
+  selectedClientKey = key; selectedClientName = name;
+  document.getElementById('selectedClient').style.display = 'block';
+  document.getElementById('selectedClientName').textContent = name;
+  document.getElementById('clientSearch').value = '';
+  document.getElementById('clientSuggestions').innerHTML = '';
+  document.getElementById('saveEmailBtn').disabled = false;
+}
+document.getElementById('clearSelectedClient').addEventListener('click', function(e){
+  e.preventDefault();
+  selectedClientKey = null; selectedClientName = null;
+  document.getElementById('selectedClient').style.display = 'none';
+  document.getElementById('saveEmailBtn').disabled = true;
+});
+
+function showStatus(msg, ok){
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg; el.className = 'status-msg show '+(ok?'ok':'err');
+}
+
+document.getElementById('saveEmailBtn').addEventListener('click', function(){
+  if(!selectedClientKey || !currentEmail) return;
+  const entry = {
+    id: uid('cem'),
+    clientKey: selectedClientKey,
+    clientName: selectedClientName,
+    subject: currentEmail.subject || '(sans objet)',
+    fromName: currentEmail.fromName || '',
+    fromEmail: currentEmail.fromEmail || '',
+    date: currentEmail.dateISO || new Date().toISOString(),
+    bodyPreview: document.getElementById('bodyPreview').value,
+    savedAt: new Date().toISOString(),
+    savedBy: auth.currentUser.email
+  };
+  db.collection('clientEmails').doc(entry.id).set(entry).then(function(){
+    showStatus('Enregistré sur la fiche de '+selectedClientName+' !', true);
+  }).catch(function(err){ showStatus("Erreur d'enregistrement : "+err.message, false); });
+});
+
+// ----- Office.js : lecture de l'email actuellement ouvert -----
+Office.onReady(function(){
+  const item = Office.context.mailbox.item;
+  const from = item.from || (item.sender || {});
+  currentEmail = {
+    subject: item.subject || '',
+    fromName: from.displayName || '',
+    fromEmail: from.emailAddress || '',
+    dateISO: item.dateTimeCreated ? new Date(item.dateTimeCreated).toISOString() : new Date().toISOString()
+  };
+  item.body.getAsync(Office.CoercionType.Text, function(result){
+    const bodyText = (result.status === Office.AsyncResultStatus.Succeeded) ? result.value : '';
+    currentEmail.bodyText = bodyText;
+    document.getElementById('emailPreview').innerHTML =
+      '<b>'+esc(currentEmail.subject || '(sans objet)')+'</b><br>'+
+      'De : '+esc(currentEmail.fromName)+' &lt;'+esc(currentEmail.fromEmail)+'&gt;<br>'+
+      new Date(currentEmail.dateISO).toLocaleString('fr-FR');
+    document.getElementById('bodyPreview').value = bodyText.slice(0, 1500);
+    // Si les clients sont déjà chargés (connexion déjà faite), on retente la présélection.
+    if(allClients.length && currentEmail.fromEmail){
+      const match = allClients.find(function(c){ return c.email && c.email.toLowerCase()===currentEmail.fromEmail.toLowerCase(); });
+      if(match) selectClient(match.key, match.name);
+    }
+  });
+});
+</script>
+</body>
+</html>
