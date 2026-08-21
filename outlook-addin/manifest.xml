@@ -19,8 +19,8 @@
   <!-- ATTENTION : remplace ce domaine par celui où tu héberges réellement ce
        dossier (probablement le même GitHub Pages que ta plateforme principale,
        dans un sous-dossier dédié). Toutes les URL ci-dessous en dépendent. -->
-  <IconUrl DefaultValue="https://louiselefichous.github.io/outlook-addin/icons/icon-32.png"/>
-  <HighResIconUrl DefaultValue="https://louiselefichous.github.io/outlook-addin/icons/icon-128.png"/>
+  <IconUrl DefaultValue="https://louiselefichous.github.io/outlook-addin/outlook-addin/icons/icon-32.png"/>
+  <HighResIconUrl DefaultValue="https://louiselefichous.github.io/outlook-addin/outlook-addin/icons/icon-128.png"/>
   <SupportUrl DefaultValue="https://louiselefichous.github.io/"/>
 
   <AppDomains>
@@ -39,7 +39,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://louiselefichous.github.io/outlook-addin/taskpane.html"/>
+        <SourceLocation DefaultValue="https://louiselefichous.github.io/outlook-addin/outlook-addin/taskpane.html"/>
       </DesktopSettings>
     </Form>
   </FormSettings>
@@ -92,13 +92,13 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://louiselefichous.github.io/outlook-addin/icons/icon-16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://louiselefichous.github.io/outlook-addin/icons/icon-32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://louiselefichous.github.io/outlook-addin/icons/icon-80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://louiselefichous.github.io/outlook-addin/outlook-addin/icons/icon-16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://louiselefichous.github.io/outlook-addin/outlook-addin/icons/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://louiselefichous.github.io/outlook-addin/outlook-addin/icons/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Commands.Url" DefaultValue="https://louiselefichous.github.io/outlook-addin/taskpane.html"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://louiselefichous.github.io/outlook-addin/taskpane.html"/>
+        <bt:Url id="Commands.Url" DefaultValue="https://louiselefichous.github.io/outlook-addin/outlook-addin/taskpane.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://louiselefichous.github.io/outlook-addin/outlook-addin/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="Marine Composite"/>
